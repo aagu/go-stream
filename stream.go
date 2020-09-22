@@ -17,6 +17,7 @@ type FilterFunc func(interface{}) bool
 type MapFunc func(interface{}) interface{}
 type FlatMapFunc func(interface{}) []interface{}
 type ForEachFunc func(interface{})
+type GroupFunc func(interface{}) interface{}
 
 // ComparatorFunc compares two elements, if a < b return -1, if
 // a = b return 0, if a > b return 1
