@@ -72,11 +72,36 @@ type baseStage struct {
 	downStream sink
 }
 
-func New(data []interface{}) Stream {
-	stream := startOp{}
-	stream.data = data
-	stream.startStage = &stream
-	return &stream
+// New wraps the given data array into Stream
+func New(data interface{}) Stream {
+	stream := &startOp{}
+	setStreamData(stream, data)
+	stream.startStage = stream
+	return stream
+}
+
+// Of provides a convenient way to wrap varargs into Stream
+func Of(elements ...interface{}) Stream {
+	return New(elements)
+}
+
+func setStreamData(stream *startOp, data interface{}) Stream {
+	arrValue := reflect.ValueOf(data)
+	if arrValue.Kind() == reflect.Ptr {
+		arrValue = arrValue.Elem()
+	}
+	switch arrValue.Kind() {
+	case reflect.Slice, reflect.Array:
+		data := make([]interface{}, 0, arrValue.Len())
+		dataValue := reflect.ValueOf(&data).Elem()
+		for idx := 0; idx < arrValue.Len(); idx++ {
+			dataValue.Set(reflect.Append(dataValue, arrValue.Index(idx)))
+		}
+		stream.data = data
+	default:
+		panic("data provides to Stream must be Array or Slice")
+	}
+	return stream
 }
 
 // implement of Stream

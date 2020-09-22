@@ -6,12 +6,7 @@ import (
 )
 
 func TestBaseStream(t *testing.T) {
-	data := make([]interface{}, 7)
-	for idx := range data {
-		data[idx] = idx + 1
-	}
-
-	stream := New(data).FlatMap(func(i interface{}) []interface{} {
+	stream := Of(1, 2, 3, 4, 5, 6, 7).FlatMap(func(i interface{}) []interface{} {
 		return []interface{}{i, i.(int) + 2}
 	}).Distinct()
 
