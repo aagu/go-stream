@@ -31,10 +31,6 @@ func (m *mapperOp) accept(t interface{}) {
 	}
 }
 
-func (m *mapperOp) end() {
-	m.downStream.end()
-}
-
 type skipperOp struct {
 	baseStage
 	skipSize  int
@@ -77,6 +73,9 @@ func (s *sorterOp) end() {
 	})
 	s.downStream.begin(len(s.data))
 	for idx := range s.data {
+		if s.downStream.cancellationRequested() { // check first, since accept may be called many times by upstream
+			break
+		}
 		s.downStream.accept(s.data[idx])
 	}
 	s.downStream.end()
@@ -94,9 +93,10 @@ func (f *flatMapperOp) begin(_ int) {
 func (f *flatMapperOp) accept(t interface{}) {
 	flatted := f.flatMapFunc(t)
 	for idx := range flatted {
-		if !f.downStream.cancellationRequested() {
-			f.downStream.accept(flatted[idx])
+		if f.downStream.cancellationRequested() {
+			break
 		}
+		f.downStream.accept(flatted[idx])
 	}
 }
 
@@ -112,7 +112,9 @@ func (l *limitOp) begin(_ int) {
 
 func (l *limitOp) accept(t interface{}) {
 	l.limitCount++
-	l.downStream.accept(t)
+	if !l.downStream.cancellationRequested() {
+		l.downStream.accept(t)
+	}
 }
 
 func (l *limitOp) cancellationRequested() bool {
@@ -135,9 +137,10 @@ func (d *distinctOp) accept(t interface{}) {
 func (d *distinctOp) end() {
 	d.downStream.begin(len(d.set))
 	for key := range d.set {
-		if !d.downStream.cancellationRequested() {
-			d.downStream.accept(key)
+		if d.downStream.cancellationRequested() {
+			break
 		}
+		d.downStream.accept(key)
 	}
 	d.downStream.end()
 }

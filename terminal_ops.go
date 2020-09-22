@@ -1,11 +1,13 @@
 package stream
 
+// the basic struct of a terminal operation
+// each Stream ends with a terminal operation
+// and all the operations in Stream will not be performed before
+// calling terminal operation
 type terminalOp struct {
 	baseStage
 	started bool
 }
-
-func (t *terminalOp) begin(_ int) {}
 
 func (t *terminalOp) end() {
 	t.startStage.closed = true
@@ -30,7 +32,7 @@ type countOp struct {
 	count int
 }
 
-func (c *countOp) accept(t interface{}) {
+func (c *countOp) accept(_ interface{}) {
 	c.count++
 }
 
