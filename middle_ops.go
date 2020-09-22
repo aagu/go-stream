@@ -144,3 +144,32 @@ func (d *distinctOp) end() {
 	}
 	d.downStream.end()
 }
+
+type GroupOp struct {
+	baseStage
+	groupFunc GroupFunc
+	groups    map[interface{}][]interface{}
+}
+
+func (g *GroupOp) begin(_ int) {
+	g.groups = make(map[interface{}][]interface{})
+}
+
+func (g *GroupOp) accept(t interface{}) {
+	key := g.groupFunc(t)
+	if g.groups[key] == nil {
+		g.groups[key] = make([]interface{}, 0)
+	}
+	g.groups[key] = append(g.groups[key], t)
+}
+
+func (g *GroupOp) end() {
+	g.downStream.begin(len(g.groups))
+	for _, value := range g.groups {
+		if g.downStream.cancellationRequested() {
+			break
+		}
+		g.downStream.accept(value)
+	}
+	g.downStream.end()
+}

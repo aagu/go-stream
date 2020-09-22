@@ -39,6 +39,9 @@ type Stream interface {
 	Limit(n int) Stream
 	// Sort uses a given ComparatorFunc to sort data
 	Sort(comparator ComparatorFunc) Stream
+	// Group uses a given GroupFunc to split data into multiple groups
+	// the order of data passes to next stage is not guaranteed
+	Group(grouper GroupFunc) Stream
 	// ForEach will call the given ForEachFunc to every element it received
 	ForEach(foeEach ForEachFunc)
 	// Collect transform stream to array
@@ -103,6 +106,10 @@ func (b *baseStage) Limit(n int) Stream {
 
 func (b *baseStage) Sort(comparator ComparatorFunc) Stream {
 	return wrapSink(b, opSorter, comparator)
+}
+
+func (b *baseStage) Group(grouper GroupFunc) Stream {
+	return wrapSink(b, OpGrouper, grouper)
 }
 
 func (b *baseStage) Max(comparator ComparatorFunc) interface{} {

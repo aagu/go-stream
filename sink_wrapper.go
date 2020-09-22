@@ -11,6 +11,7 @@ const (
 	opSkipper
 	opLimiter
 	opSorter
+	OpGrouper
 	opCollector
 	opDistincter
 	opLooper
@@ -56,6 +57,11 @@ func wrapSink(b *baseStage, s streamer, callback ...interface{}) stage {
 		checkCallback("sort", callback)
 		downStream.comparator = callback[0].(ComparatorFunc)
 		nextStage = downStream
+	case OpGrouper:
+		downStream := new(GroupOp)
+		checkCallback("group", callback)
+		downStream.groupFunc = callback[0].(GroupFunc)
+		nextStage = downStream
 	case opCollector:
 		downStream := new(collectOp)
 		nextStage = downStream
@@ -86,5 +92,8 @@ func wrapSink(b *baseStage, s streamer, callback ...interface{}) stage {
 func checkCallback(name string, callback ...interface{}) {
 	if len(callback) == 0 {
 		panic(fmt.Sprintf("not callback function found for %s", name))
+	}
+	if callback[0] == nil {
+		panic("callback function could not be nil")
 	}
 }
