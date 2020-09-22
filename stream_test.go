@@ -6,7 +6,9 @@ import (
 )
 
 func TestBaseStream(t *testing.T) {
-	stream := Of(1, 2, 3, 4, 5, 6, 7).FlatMap(func(i interface{}) []interface{} {
+	stream := Of(1, 2, 3, 4, 5, 6, 7).Filter(func(i interface{}) bool {
+		return i.(int)%2 == 0
+	}).FlatMap(func(i interface{}) []interface{} {
 		return []interface{}{i, i.(int) + 2}
 	}).Distinct()
 

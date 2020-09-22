@@ -1,5 +1,7 @@
 package stream
 
+import "reflect"
+
 // sink links different stages in a stream
 // stream operations should implement this interface to perform data processing
 type sink interface {
