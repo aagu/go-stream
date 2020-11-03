@@ -12,6 +12,7 @@ const (
 	opLimiter
 	opSorter
 	OpGrouper
+	OpParalleled
 	opCollector
 	opDistincter
 	opLooper
@@ -62,6 +63,10 @@ func wrapSink(b *baseStage, s streamer, callback ...interface{}) stage {
 		checkCallback("group", callback)
 		downStream.groupFunc = callback[0].(GroupFunc)
 		nextStage = downStream
+	case OpParalleled:
+		downStream := new(parallelStage)
+		nextStage = downStream
+		b.paralleled = true
 	case opCollector:
 		downStream := new(collectOp)
 		nextStage = downStream

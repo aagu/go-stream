@@ -1,6 +1,8 @@
 package stream
 
-import "reflect"
+import (
+	"reflect"
+)
 
 // sink links different stages in a stream
 // stream operations should implement this interface to perform data processing
@@ -45,6 +47,8 @@ type Stream interface {
 	// Group uses a given GroupFunc to split data into multiple groups
 	// the order of data passes to next stage is not guaranteed
 	Group(grouper GroupFunc) Stream
+	// Parallel convert a Stream into paralleled Stream, uses parallel go routine to process Stream function
+	Parallel() Stream
 	// ForEach will call the given ForEachFunc to every element it received
 	ForEach(foeEach ForEachFunc)
 	// Collect transform stream to array
@@ -73,6 +77,7 @@ type stage interface {
 type baseStage struct {
 	startStage *startOp
 	downStream sink
+	paralleled bool
 }
 
 // New wraps the given data array into Stream
@@ -138,6 +143,10 @@ func (b *baseStage) Sort(comparator ComparatorFunc) Stream {
 
 func (b *baseStage) Group(grouper GroupFunc) Stream {
 	return wrapSink(b, OpGrouper, grouper)
+}
+
+func (b *baseStage) Parallel() Stream {
+	return wrapSink(b, OpParalleled)
 }
 
 func (b *baseStage) Max(comparator ComparatorFunc) interface{} {

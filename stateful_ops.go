@@ -1,38 +1,17 @@
 package stream
 
-import "sort"
+import (
+	"sort"
+	"sync"
+)
 
-type filterOp struct {
+type statefulOp struct {
 	baseStage
-	filterFunc FilterFunc
-}
-
-func (f *filterOp) begin(_ int) {
-	f.downStream.begin(0)
-}
-
-func (f *filterOp) accept(t interface{}) {
-	if f.downStream.cancellationRequested() {
-		return
-	}
-	if f.filterFunc(t) {
-		f.downStream.accept(t)
-	}
-}
-
-type mapperOp struct {
-	baseStage
-	mapperFunc MapFunc
-}
-
-func (m *mapperOp) accept(t interface{}) {
-	if !m.downStream.cancellationRequested() {
-		m.downStream.accept(m.mapperFunc(t))
-	}
+	l sync.Mutex // for parallel stream synchronization
 }
 
 type skipperOp struct {
-	baseStage
+	statefulOp
 	skipSize  int
 	skipCount int
 }
@@ -42,15 +21,18 @@ func (s *skipperOp) begin(size int) {
 }
 
 func (s *skipperOp) accept(t interface{}) {
+	s.l.Lock()
 	if s.skipCount >= s.skipSize && !s.downStream.cancellationRequested() {
+		s.l.Unlock()
 		s.downStream.accept(t)
 	} else {
 		s.skipCount++
+		s.l.Unlock()
 	}
 }
 
 type sorterOp struct {
-	baseStage
+	statefulOp
 	comparator ComparatorFunc
 	data       []interface{}
 }
@@ -64,7 +46,9 @@ func (s *sorterOp) begin(size int) {
 }
 
 func (s *sorterOp) accept(t interface{}) {
+	s.l.Lock()
 	s.data = append(s.data, t)
+	s.l.Unlock()
 }
 
 func (s *sorterOp) end() {
@@ -81,27 +65,8 @@ func (s *sorterOp) end() {
 	s.downStream.end()
 }
 
-type flatMapperOp struct {
-	baseStage
-	flatMapFunc FlatMapFunc
-}
-
-func (f *flatMapperOp) begin(_ int) {
-	f.downStream.begin(0)
-}
-
-func (f *flatMapperOp) accept(t interface{}) {
-	flatted := f.flatMapFunc(t)
-	for idx := range flatted {
-		if f.downStream.cancellationRequested() {
-			break
-		}
-		f.downStream.accept(flatted[idx])
-	}
-}
-
 type limitOp struct {
-	baseStage
+	statefulOp
 	limitSize  int
 	limitCount int
 }
@@ -111,13 +76,17 @@ func (l *limitOp) begin(_ int) {
 }
 
 func (l *limitOp) accept(t interface{}) {
+	l.l.Lock()
 	l.limitCount++
+	l.l.Unlock()
 	if !l.downStream.cancellationRequested() {
 		l.downStream.accept(t)
 	}
 }
 
 func (l *limitOp) cancellationRequested() bool {
+	l.l.Lock()
+	defer l.l.Unlock()
 	return l.limitCount >= l.limitSize
 }
 
@@ -146,7 +115,7 @@ func (d *distinctOp) end() {
 }
 
 type GroupOp struct {
-	baseStage
+	statefulOp
 	groupFunc GroupFunc
 	groups    map[interface{}][]interface{}
 }
@@ -160,7 +129,9 @@ func (g *GroupOp) accept(t interface{}) {
 	if g.groups[key] == nil {
 		g.groups[key] = make([]interface{}, 0)
 	}
+	g.l.Lock()
 	g.groups[key] = append(g.groups[key], t)
+	g.l.Unlock()
 }
 
 func (g *GroupOp) end() {
