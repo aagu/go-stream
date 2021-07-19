@@ -19,6 +19,8 @@ const (
 	opMaximizer
 	opMinimizer
 	opCounter
+	opFirst
+	opLast
 )
 
 // wrapSink is a helper function takes care of creating different kind of stages
@@ -88,6 +90,14 @@ func wrapSink(b *baseStage, s streamer, callback ...interface{}) stage {
 	case opCounter:
 		downStream := new(countOp)
 		nextStage = downStream
+	case opFirst:
+		downStream := new(firstOp)
+		nextStage = downStream
+	case opLast:
+		downStream := new(lastOp)
+		nextStage = downStream
+	default:
+		panic(fmt.Sprintf("unknown op %v", s))
 	}
 	b.setNextSink(nextStage)
 	nextStage.setStartStage(b.getStartStage())

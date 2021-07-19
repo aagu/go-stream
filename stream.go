@@ -59,6 +59,10 @@ type Stream interface {
 	Max(comparator ComparatorFunc) interface{}
 	// Min returns the minimal element in stream use the given ComparatorFunc
 	Min(comparator ComparatorFunc) interface{}
+	// First returns the first element in stream or nil
+	First() interface{}
+	// Last returns the last element in stream or nil
+	Last() interface{}
 }
 
 // stage is the abstraction of a stream stage
@@ -177,6 +181,18 @@ func (b *baseStage) Count() int {
 	downStream := wrapSink(b, opCounter)
 	b.startStage.end()
 	return downStream.(*countOp).count
+}
+
+func (b *baseStage) First() interface{} {
+	downStream := wrapSink(b, opFirst)
+	b.startStage.end()
+	return downStream.(*firstOp).val
+}
+
+func (b *baseStage) Last() interface{} {
+	downStream := wrapSink(b, opLast)
+	b.startStage.end()
+	return downStream.(*lastOp).val
 }
 
 // implement sink

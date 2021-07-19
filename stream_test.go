@@ -9,13 +9,12 @@ import (
 func TestBaseStream(t *testing.T) {
 	given := dataGenerator()
 	start := time.Now()
-	New(given).Parallel().Filter(func(i interface{}) bool {
+	first := New(given).Filter(func(i interface{}) bool {
 		return i.(int)%2 == 0
 	}).FlatMap(func(i interface{}) []interface{} {
 		return []interface{}{i, i.(int) + 2}
-	}).Skip(3).ForEach(func(i interface{}) {
-		fmt.Print(" ")
-	})
+	}).Skip(3).Last()
+	fmt.Println(first)
 	fmt.Println("\nstream", time.Now().Sub(start))
 
 	//fmt.Println(stream.Min(func(a interface{}, b interface{}) int {

@@ -63,3 +63,27 @@ func (m *minOp) accept(t interface{}) {
 		m.min = t
 	}
 }
+
+type firstOp struct {
+	terminalOp
+	val    interface{}
+	cancel bool
+}
+
+func (f *firstOp) accept(v interface{}) {
+	f.val = v
+	f.cancel = true
+}
+
+func (f *firstOp) cancellationRequested() bool {
+	return f.cancel
+}
+
+type lastOp struct {
+	terminalOp
+	val interface{}
+}
+
+func (l *lastOp) accept(v interface{}) {
+	l.val = v
+}
