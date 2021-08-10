@@ -18,6 +18,10 @@ type collectOp struct {
 	data []interface{}
 }
 
+func (c *collectOp) accept(t interface{}) {
+	c.data = append(c.data, t)
+}
+
 type forEachOp struct {
 	terminalOp
 	forEach ForEachFunc
