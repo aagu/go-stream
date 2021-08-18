@@ -21,6 +21,7 @@ const (
 	opCounter
 	opFirst
 	opLast
+	opFuncDistincter
 )
 
 // wrapSink is a helper function takes care of creating different kind of stages
@@ -95,6 +96,11 @@ func wrapSink(b *baseStage, s streamer, callback ...interface{}) stage {
 		nextStage = downStream
 	case opLast:
 		downStream := new(lastOp)
+		nextStage = downStream
+	case opFuncDistincter:
+		downStream := new(funcDistinctOp)
+		checkCallback("distinctByFunc", callback)
+		downStream.fn = callback[0].(DistinctFunc)
 		nextStage = downStream
 	default:
 		panic(fmt.Sprintf("unknown op %v", s))

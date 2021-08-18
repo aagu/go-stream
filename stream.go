@@ -22,6 +22,7 @@ type MapFunc func(interface{}) interface{}
 type FlatMapFunc func(interface{}) []interface{}
 type ForEachFunc func(interface{})
 type GroupFunc func(interface{}) interface{}
+type DistinctFunc func(interface{}) interface{}
 
 // ComparatorFunc compares two elements, if a < b return -1, if
 // a = b return 0, if a > b return 1
@@ -38,6 +39,7 @@ type Stream interface {
 	// Distinct passes only the different data to next stage use a golang built in map
 	// the order of data passes to next stage is not guaranteed
 	Distinct() Stream
+	DistinctByFunc(fn DistinctFunc) Stream
 	// Skip will not pass the first n elements it received to next stage
 	Skip(n int) Stream
 	// Limit will guarantee that no more than n elements pass to next stage
@@ -117,6 +119,7 @@ func setStreamData(stream *startOp, data interface{}) Stream {
 }
 
 // implement of Stream
+
 func (b *baseStage) Filter(filter FilterFunc) Stream {
 	return wrapSink(b, opFilter, filter)
 }
@@ -131,6 +134,10 @@ func (b *baseStage) FlatMap(mapper FlatMapFunc) Stream {
 
 func (b *baseStage) Distinct() Stream {
 	return wrapSink(b, opDistincter)
+}
+
+func (b *baseStage) DistinctByFunc(fn DistinctFunc) Stream {
+	return wrapSink(b, opFuncDistincter, fn)
 }
 
 func (b *baseStage) Skip(n int) Stream {

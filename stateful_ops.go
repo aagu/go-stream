@@ -91,16 +91,16 @@ func (l *limitOp) cancellationRequested() bool {
 }
 
 type distinctOp struct {
-	terminalOp
-	set map[interface{}]byte // temp storage
+	statefulOp
+	set map[interface{}]struct{} // temp storage
 }
 
 func (d *distinctOp) begin(_ int) {
-	d.set = make(map[interface{}]byte)
+	d.set = make(map[interface{}]struct{})
 }
 
 func (d *distinctOp) accept(t interface{}) {
-	d.set[t] = 0x01
+	d.set[t] = struct{}{}
 }
 
 func (d *distinctOp) end() {
@@ -112,6 +112,31 @@ func (d *distinctOp) end() {
 		d.downStream.accept(key)
 	}
 	d.downStream.end()
+}
+
+type funcDistinctOp struct {
+	statefulOp
+	set map[interface{}]interface{}
+	fn  DistinctFunc
+}
+
+func (f *funcDistinctOp) begin(_ int) {
+	f.set = make(map[interface{}]interface{})
+}
+
+func (f *funcDistinctOp) accept(t interface{}) {
+	f.set[f.fn(t)] = t
+}
+
+func (f *funcDistinctOp) end() {
+	f.downStream.begin(len(f.set))
+	for _, v := range f.set {
+		if f.downStream.cancellationRequested() {
+			break
+		}
+		f.downStream.accept(v)
+	}
+	f.downStream.end()
 }
 
 type GroupOp struct {

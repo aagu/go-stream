@@ -13,7 +13,9 @@ func TestBaseStream(t *testing.T) {
 		return i.(int)%2 == 0
 	}).FlatMap(func(i interface{}) []interface{} {
 		return []interface{}{i, i.(int) + 2}
-	}).Skip(3).Collect()
+	}).Skip(3).DistinctByFunc(func(v interface{}) interface{} {
+		return v
+	}).Collect()
 	fmt.Println(first)
 	fmt.Println("\nstream", time.Now().Sub(start))
 
