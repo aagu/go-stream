@@ -91,3 +91,19 @@ type lastOp struct {
 func (l *lastOp) accept(v interface{}) {
 	l.val = v
 }
+
+type reduceOp struct {
+	terminalOp
+	reduceFunc ReduceFunc
+	received   []interface{}
+	out        interface{}
+	err        error
+}
+
+func (i *reduceOp) accept(v interface{}) {
+	i.received = append(i.received, v)
+}
+
+func (i *reduceOp) end() {
+	i.err = i.reduceFunc(i.received, i.out)
+}

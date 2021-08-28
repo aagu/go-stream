@@ -28,6 +28,8 @@ type DistinctFunc func(interface{}) interface{}
 // a = b return 0, if a > b return 1
 type ComparatorFunc func(a interface{}, b interface{}) int
 
+type ReduceFunc func(in []interface{}, out interface{}) error
+
 // Stream defines all possible stream operations
 type Stream interface {
 	// Filter uses a FilterFunc to filter out data
@@ -65,6 +67,8 @@ type Stream interface {
 	First() interface{}
 	// Last returns the last element in stream or nil
 	Last() interface{}
+	// Reduce uses the ReduceFunc to collect elements in stream
+	Reduce(into ReduceFunc, out interface{}) error
 }
 
 // stage is the abstraction of a stream stage
@@ -200,6 +204,12 @@ func (b *baseStage) Last() interface{} {
 	downStream := wrapSink(b, opLast)
 	b.startStage.end()
 	return downStream.(*lastOp).val
+}
+
+func (b *baseStage) Reduce(reduce ReduceFunc, out interface{}) error {
+	downStream := wrapSink(b, opReduce, reduce, out)
+	b.startStage.end()
+	return downStream.(*reduceOp).err
 }
 
 // implement sink

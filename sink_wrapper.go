@@ -22,6 +22,7 @@ const (
 	opFirst
 	opLast
 	opFuncDistincter
+	opReduce
 )
 
 // wrapSink is a helper function takes care of creating different kind of stages
@@ -101,6 +102,15 @@ func wrapSink(b *baseStage, s streamer, callback ...interface{}) stage {
 		downStream := new(funcDistinctOp)
 		checkCallback("distinctByFunc", callback)
 		downStream.fn = callback[0].(DistinctFunc)
+		nextStage = downStream
+	case opReduce:
+		downStream := new(reduceOp)
+		if len(callback) != 2 {
+			panic(fmt.Sprintf("opReduce needs 2 callbacks"))
+		}
+		checkCallback("intoFunc", callback)
+		downStream.reduceFunc = callback[0].(ReduceFunc)
+		downStream.out = callback[1]
 		nextStage = downStream
 	default:
 		panic(fmt.Sprintf("unknown op %v", s))

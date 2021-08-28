@@ -6,17 +6,23 @@ import (
 	"time"
 )
 
+type Struct struct {
+	Num int
+}
+
 func TestBaseStream(t *testing.T) {
 	given := dataGenerator()
 	start := time.Now()
-	first := New(given).Filter(func(i interface{}) bool {
+	var out []Struct
+	err := New(given).Filter(func(i interface{}) bool {
 		return i.(int)%2 == 0
 	}).FlatMap(func(i interface{}) []interface{} {
 		return []interface{}{i, i.(int) + 2}
-	}).Skip(3).DistinctByFunc(func(v interface{}) interface{} {
-		return v
-	}).Collect()
-	fmt.Println(first)
+	}).Map(func(v interface{}) interface{} {
+		return Struct{Num: v.(int)}
+	}).Reduce(ToList(), &out)
+	fmt.Println(err)
+	fmt.Println(out)
 	fmt.Println("\nstream", time.Now().Sub(start))
 
 	//fmt.Println(stream.Min(func(a interface{}, b interface{}) int {
